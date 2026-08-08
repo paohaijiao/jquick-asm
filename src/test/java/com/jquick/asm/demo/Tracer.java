@@ -10,45 +10,33 @@ import java.util.List;
  */
 public final class Tracer {
 
-    /**
-     * 收集的埋点事件。
-     */
-    private static final List<String> EVENTS = new ArrayList<>();
-
     private Tracer() {
     }
 
-    /**
-     * 方法进入埋点。
-     */
+    /** 收集的埋点事件。 */
+    private static final List<String> EVENTS = new ArrayList<>();
+
+    /** 方法进入埋点。 */
     public static void onEnter(String methodName) {
         EVENTS.add("ENTER " + methodName);
     }
 
-    /**
-     * 方法正常返回埋点。
-     */
+    /** 方法正常返回埋点。 */
     public static void onExit(String methodName) {
         EVENTS.add("EXIT  " + methodName);
     }
 
-    /**
-     * 方法异常埋点。
-     */
+    /** 方法异常埋点。 */
     public static void onError(String methodName, Throwable t) {
         EVENTS.add("ERROR " + methodName + " -> " + t.getClass().getSimpleName());
     }
 
-    /**
-     * 清空埋点（每个测试用例开始前调用）。
-     */
+    /** 清空埋点（每个测试用例开始前调用）。 */
     public static synchronized void reset() {
         EVENTS.clear();
     }
 
-    /**
-     * 获取埋点快照。
-     */
+    /** 获取埋点快照。 */
     public static synchronized List<String> snapshot() {
         return new ArrayList<>(EVENTS);
     }

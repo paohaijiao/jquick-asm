@@ -74,9 +74,8 @@ public class JQuickDemoTest {
                 .addMethodAnnotation("add", "(II)I", "Lcom/demo/Trace;")
                 .changeMethodAccess("toString", "()Ljava/lang/String;", Opcodes.ACC_PUBLIC)
                 .apply();
-
         JQuickClassInfo info = JQuickClassReaderTool.read(modified);
-        assertTrue("应新增 counter 字段", info.findField("counter") != null);
+        assertTrue("新增 counter 字段", info.findField("counter") != null);
         JQuickMethodInfo add = info.findMethod("add", "(II)I");
         assertTrue("add 应带 Trace 注解", add.getAnnotation("Lcom/demo/Trace;") != null);
         System.out.println("修改后结构:\n" + JQuickClassReaderTool.summarize(info));
@@ -120,11 +119,9 @@ public class JQuickDemoTest {
         Constructor<?> ctor = enhancedClass.getConstructor(int.class);
         Object instance = ctor.newInstance(100);
         Method add = enhancedClass.getMethod("add", int.class, int.class);
-
         Object result = add.invoke(instance, 1, 2);
         System.out.println("add(1,2) = " + result + " (期望 103)");
         assertEquals(103, result);
-
         List<String> events = Tracer.snapshot();
         System.out.println("埋点事件: " + events);
         assertTrue("应包含 ENTER add", events.contains("ENTER add"));
