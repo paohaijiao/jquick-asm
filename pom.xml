@@ -44,7 +44,7 @@
     <description>jquick-asm is a  foundational Java bytecode manipulation library purely natively encapsulated atop ASM 9.x,
         dedicated to lowering the technical barrier of bytecode enhancement through an extremely minimalist API.
     </description>
-    <url>https://github.com/paohaijiao/jquick-curl</url>
+    <url>https://github.com/paohaijiao/jquick-asm</url>
     <licenses>
         <license>
             <name>The Apache License, Version 2.0</name>
@@ -60,7 +60,7 @@
         </developer>
     </developers>
     <scm>
-        <url>https://github.com/paohaijiao/jquick-curl</url>
+        <url>https://github.com/paohaijiao/jquick-asm</url>
     </scm>
     <build>
         <plugins>
