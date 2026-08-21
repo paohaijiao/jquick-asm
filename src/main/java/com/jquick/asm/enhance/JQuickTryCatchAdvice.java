@@ -1,34 +1,35 @@
 package com.jquick.asm.enhance;
 
 /**
- * asm-enhance try-catch 环绕通知接口。
+ * asm‑enhance try‑catch around advice interface.
  *
- * <p>定义方法「进入」「正常返回」「异常退出」三类钩子，由 {@link JQuickTryCatchEnhancer}
- * 在字节码层面用 try-catch 环绕实现异常捕获埋点。
+ * <p>Defines three hook points: method entry, normal return and exceptional exit.
+ * Implemented via bytecode‑level try‑catch wrapping by {@link JQuickTryCatchEnhancer} for exception‑capture instrumentation.
  *
- * <h3>钩子触发时机</h3>
+ * <h3>Hook Execution Timing</h3>
  * <ul>
- *   <li>{@link #onEnter}：方法体最前面（try 块之前，不受捕获影响）。</li>
- *   <li>{@link #onExit}：每条返回指令之前（try 块内，正常返回路径）。</li>
- *   <li>{@link #onException}：catch 处理块。调用时操作数栈顶为捕获的异常对象
- *       （{@code java/lang/Throwable}），<b>实现方必须保持该异常仍在栈顶</b>，
- *       以便增强器在钩子后执行 ATHROW 重抛。如需读取异常，请先 DUP 再调用静态方法。</li>
+ *   <li>{@link #onEnter}: At the very beginning of method body (before try‑block, unaffected by exception catching).</li>
+ *   <li>{@link #onExit}: Before each return instruction within try‑block, for normal‑return path.</li>
+ *   <li>{@link #onException}: Executes inside catch handler. The caught throwable object ({@code java/lang/Throwable})
+ *       sits on top of operand stack on invocation. <b>Implementors must keep this throwable on stack top</b>,
+ *       so enhancer can re‑throw with ATHROW after hook. To consume the exception, duplicate it with DUP before invoking static methods.</li>
  * </ul>
  *
- * <h3>使用示例</h3>
+ * <h3>Usage Example</h3>
  * <pre>{@code
  * JQuickTryCatchAdvice advice = JQuickTryCatchAdvice.builder()
  *     .onEnter(ctx -> print(ctx.methodVisitor(), ">> enter " + ctx.name()))
  *     .onExit(ctx -> print(ctx.methodVisitor(), "<< exit  " + ctx.name()))
  *     .onException(ctx -> {
  *         MethodVisitor mv = ctx.methodVisitor();
- *         mv.visitInsn(Opcodes.DUP);                       // 复制异常对象
+ *         mv.visitInsn(Opcodes.DUP);                       // duplicate throwable object
  *         mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/demo/Tracer",
  *                 "onError", "(Ljava/lang/Throwable;)V", false);
  *     })
  *     .build();
  * }</pre>
  */
+
 public interface JQuickTryCatchAdvice {
 
     static Builder builder() {
@@ -36,25 +37,25 @@ public interface JQuickTryCatchAdvice {
     }
 
     /**
-     * 方法进入。
+     * Method entry hook.
      */
     default void onEnter(JQuickMethodContext ctx) {
     }
 
     /**
-     * 方法正常返回前。
+     * Method exit hook.
      */
     default void onExit(JQuickMethodContext ctx) {
     }
 
     /**
-     * 方法异常退出（catch 块）。栈顶为异常对象，钩子结束后会被重抛。
+     * Exception hook.
      */
     default void onException(JQuickMethodContext ctx) {
     }
 
     /**
-     * 构建器。
+     * Builder pattern for configuring advice hooks.
      */
     final class Builder {
         private JQuickMethodAdvice.EnterHook enterHook = ctx -> {

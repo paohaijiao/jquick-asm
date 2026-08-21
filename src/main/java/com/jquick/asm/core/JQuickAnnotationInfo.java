@@ -5,9 +5,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * asm-core 注解信息容器。
- * <p>记录一个注解的描述符与属性键值对，是类/字段/方法注解解析结果的统一载体。
- * <h3>使用示例</h3>
+ * ASM‑core annotation metadata container.
+ * <p>Stores annotation descriptor and attribute key‑value pairs, unified carrier for parsed annotations on class, field and method.
+ * <h3>Examples</h3>
  * <pre>{@code
  * JQuickAnnotationInfo ann = new JQuickAnnotationInfo("Lcom/demo/Trace;");
  * ann.setAttribute("value", "doSomething");
@@ -17,18 +17,18 @@ import java.util.Map;
 public class JQuickAnnotationInfo {
 
     /**
-     * 注解类型描述符，如 {@code "Lcom/demo/Trace;"}
+     * Annotation type descriptor, e.g. {@code "Lcom/demo/Trace;"}.
      */
     private final String descriptor;
 
     /**
-     * 注解属性键值对，保持插入顺序
+     * Annotation attribute key‑value pairs, preserves insertion order.
      */
     private final Map<String, Object> attributes = new LinkedHashMap<>();
 
     public JQuickAnnotationInfo(String descriptor) {
         if (descriptor == null || descriptor.isEmpty()) {
-            throw new IllegalArgumentException("注解描述符不能为空");
+            throw new IllegalArgumentException("Annotation descriptor cannot be empty");
         }
         this.descriptor = descriptor;
     }
@@ -38,12 +38,12 @@ public class JQuickAnnotationInfo {
     }
 
     /**
-     * 获取注解全限定类名（点分隔）。
+     * Gets fully‑qualified annotation class name (dot‑separated).
      *
-     * @return 如 {@code "com.demo.Trace"}
+     * @return e.g. {@code "com.demo.Trace"}
      */
     public String getClassName() {
-        // 去掉 L 前缀和 ; 后缀，并把 / 转为 .
+        //Remove the L prefix and; Suffix and convert/to
         String name = descriptor;
         if (name.startsWith("L") && name.endsWith(";")) {
             name = name.substring(1, name.length() - 1);

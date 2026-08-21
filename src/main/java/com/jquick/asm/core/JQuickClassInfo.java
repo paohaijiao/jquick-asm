@@ -5,12 +5,13 @@ import com.jquick.asm.util.JQuickAccessUtil;
 import java.util.*;
 
 /**
- * asm-core 类信息容器。
+ * ASM‑core class metadata container.
  *
- * <p>记录一个类的完整结构信息：版本、访问修饰符、类名、父类、接口、字段、方法、注解。
- * 由 {@code asm-reader} 解析填充，供 {@code asm-writer}/{@code asm-enhance} 使用。
+ * <p>Holds full class structure: version, access modifiers, class name, superclass,
+ * interfaces, fields, methods and annotations. Populated by {@code asm‑reader},
+ * and consumed by {@code asm‑writer}/{@code asm‑enhance}.
  *
- * <h3>使用示例</h3>
+ * <h3>Examples</h3>
  * <pre>{@code
  * JQuickClassInfo info = JQuickClassReaderTool.read(MyClass.class);
  * String superName = info.getSuperName();
@@ -23,31 +24,31 @@ import java.util.*;
 public class JQuickClassInfo {
 
     /**
-     * 直接实现接口的内部名列表
+     * Internal names of directly‑implemented interfaces.
      */
     private final List<String> interfaces = new ArrayList<>();
     /**
-     * 字段列表
+     * fields List.
      */
     private final List<JQuickFieldInfo> fields = new ArrayList<>();
     /**
-     * 方法列表
+     * method List.
      */
     private final List<JQuickMethodInfo> methods = new ArrayList<>();
     /**
-     * 类注解列表
+     * annotation List
      */
     private final List<JQuickAnnotationInfo> annotations = new ArrayList<>();
     /**
-     * 字节码版本，如 {@link org.objectweb.asm.Opcodes#V1_8}
+     * Bytecode version, e.g. {@link org.objectweb.asm.Opcodes#V1_8}.
      */
     private int version;
     /**
-     * 访问修饰符
+     * Access modifiers.
      */
     private int access;
     /**
-     * 类内部名，如 {@code "com/demo/Foo"}
+     * Class internal name, e.g. {@code "com/demo/Foo"}.
      */
     private String internalName;
     /**
@@ -55,7 +56,7 @@ public class JQuickClassInfo {
      */
     private String superName;
     /**
-     * 泛型签名
+     * Superclass internal name, e.g. {@code "java/lang/Object"}.
      */
     private String signature;
 
@@ -84,7 +85,7 @@ public class JQuickClassInfo {
     }
 
     /**
-     * 获取全限定类名（点分隔）。
+     * Gets fully‑qualified class name (dot‑separated).
      */
     public String getClassName() {
         return internalName == null ? null : internalName.replace('/', '.');
@@ -141,11 +142,11 @@ public class JQuickClassInfo {
     }
 
     /**
-     * 按名称+描述符查找方法。
+     * Finds method by name and descriptor.
      *
-     * @param name       方法名
-     * @param descriptor 方法描述符
-     * @return 找到的方法信息，否则 null
+     * @param name       method name
+     * @param descriptor method descriptor
+     * @return matched method info, {@code null} if not found
      */
     public JQuickMethodInfo findMethod(String name, String descriptor) {
         for (JQuickMethodInfo m : methods) {
@@ -157,7 +158,7 @@ public class JQuickClassInfo {
     }
 
     /**
-     * 按名称查找字段。
+     * Finds field by name.
      */
     public JQuickFieldInfo findField(String name) {
         for (JQuickFieldInfo f : fields) {

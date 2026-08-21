@@ -9,43 +9,43 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * asm-reader 类读取工具。
+ * ASM bytecode reader utility.
  *
- * <p>对外提供易用 API，一行代码即可解析类的父类、接口、字段、方法、注解、
- * 方法参数、方法异常列表、访问修饰符，无需手写 {@link org.objectweb.asm.ClassVisitor}。
+ * <p>Simple high‑level API to parse class metadata: superclass, interfaces, fields,
+ * methods, annotations, parameters, exceptions and access modifiers.
+ * No manual {@link org.objectweb.asm.ClassVisitor} implementation needed.
  *
- * <p>采用 {@link JQuickAsmConstants#PARSE_FLAGS}（SKIP_FRAMES）模式，避免栈帧报错；
- * 保留调试信息（参数名）由 {@link #readKeepDebug} 系列方法提供。
+ * <p>Uses {@link JQuickAsmConstants#PARSE_FLAGS}(SKIP_FRAMES) by default.
+ * Use {@link #readKeepDebug} to retain debug info including parameter names.
  *
- * <h3>使用示例</h3>
+ * <h3>Examples</h3>
  * <pre>{@code
- * // 1. 从 Class 对象读取
+ * // Read from Class
  * JQuickClassInfo info = JQuickClassReaderTool.read(MyClass.class);
- * System.out.println(info.getSuperName());
  *
- * // 2. 从字节码读取（保留参数名）
+ * // Read byte array with debug info
  * JQuickClassInfo info2 = JQuickClassReaderTool.readKeepDebug(bytes);
- * JQuickMethodInfo m = info2.findMethod("doSomething", "(I)V");
- * List<String> params = m.getParameterNames();
+ * List<String> params = info2.findMethod("doSomething", "(I)V").getParameterNames();
  *
- * // 3. 从类名读取（通过类加载器加载资源）
+ * // Read by fully‑qualified class name
  * JQuickClassInfo info3 = JQuickClassReaderTool.read("com.demo.MyClass");
  * }</pre>
  */
+
 public final class JQuickClassReaderTool {
 
     private JQuickClassReaderTool() {
     }
 
     /**
-     * 从 {@link Class} 对象读取类信息。
+     * Reads class metadata from a {@link Class} object.
      *
-     * @param clazz Java Class 对象
-     * @return 类信息容器
+     * @param clazz Java Class instance
+     * @return class metadata container
      */
     public static JQuickClassInfo read(Class<?> clazz) {
         if (clazz == null) {
-            throw new IllegalArgumentException("clazz 不能为 null");
+            throw new IllegalArgumentException("clazz require not null");
         }
         String internalName = clazz.getName().replace('.', '/');
         String resource = internalName + ".class";
@@ -53,79 +53,79 @@ public final class JQuickClassReaderTool {
                 ? ClassLoader.getSystemResourceAsStream(resource)
                 : clazz.getClassLoader().getResourceAsStream(resource)) {
             if (in == null) {
-                throw new IllegalStateException("无法找到类资源: " + resource);
+                throw new IllegalStateException("Unable to find class resource : " + resource);
             }
             return read(in);
         } catch (IOException e) {
-            throw new RuntimeException("读取类资源失败: " + clazz.getName(), e);
+            throw new RuntimeException("Failed to read class resources: " + clazz.getName(), e);
         }
     }
 
     /**
-     * 从字节码读取类信息（跳过调试信息，解析最快）。
+     * Reads class metadata from bytecode. Skips debug information for fastest parsing.
      *
-     * @param bytes 字节码
-     * @return 类信息容器
+     * @param bytes class bytecode
+     * @return class info container
      */
     public static JQuickClassInfo read(byte[] bytes) {
         return read(bytes, JQuickAsmConstants.PARSE_FLAGS);
     }
 
     /**
-     * 从字节码读取类信息（保留调试信息，可获取参数名）。
+     * Reads class metadata from bytecode, keeps debug information for parameter names.
      *
-     * @param bytes 字节码
-     * @return 类信息容器
+     * @param bytes class bytecode
+     * @return class info container
      */
     public static JQuickClassInfo readKeepDebug(byte[] bytes) {
         return read(bytes, JQuickAsmConstants.PARSE_FLAGS_KEEP_DEBUG);
     }
 
     /**
-     * 从输入流读取类信息。
+     * Reads class metadata from input stream.
      *
-     * @param in 字节码输入流
-     * @return 类信息容器
+     * @param in bytecode input stream
+     * @return class info container
      */
     public static JQuickClassInfo read(InputStream in) {
         try {
             return read(toBytes(in));
         } catch (IOException e) {
-            throw new RuntimeException("读取输入流失败", e);
+            throw new RuntimeException("Reading input stream failed ", e);
         }
     }
 
     /**
-     * 从类名读取类信息（使用系统类加载器加载类资源）。
+     * Reads class metadata by class name, loads class resource using system classloader.
      *
-     * @param className 全限定类名，如 {@code "com.demo.MyClass"}
-     * @return 类信息容器
+     * @param className fully‑qualified class name, e.g. {@code "com.demo.MyClass"}
+     * @return class info container
      */
     public static JQuickClassInfo read(String className) {
         if (className == null || className.isEmpty()) {
-            throw new IllegalArgumentException("className 不能为空");
+            throw new IllegalArgumentException("ClassName cannot be empty ");
         }
         String resource = className.replace('.', '/') + ".class";
         try (InputStream in = ClassLoader.getSystemResourceAsStream(resource)) {
             if (in == null) {
-                throw new IllegalStateException("无法找到类资源: " + resource);
+                throw new IllegalStateException("Unable to find class resource : " + resource);
             }
             return read(in);
         } catch (IOException e) {
-            throw new RuntimeException("读取类资源失败: " + className, e);
+            throw new RuntimeException("Failed to read class resources : " + className, e);
         }
     }
 
     /**
-     * 从字节码读取类信息，自定义解析标志位。
+     * Reads class metadata from bytecode with custom parse flags.
      *
-     * @param bytes 字节码
-     * @param flags 解析标志位
-     * @return 类信息容器
+     * @param bytes class bytecode
+     * @param flags parse flags
+     * @return class info container
      */
     public static JQuickClassInfo read(byte[] bytes, int flags) {
         if (bytes == null || bytes.length == 0) {
-            throw new IllegalArgumentException("bytes 不能为空");
+            throw new IllegalArgumentException("Bytes cannot be empty ");
         }
         ClassReader reader = new ClassReader(bytes);
         JQuickClassInfo info = new JQuickClassInfo();
@@ -135,10 +135,10 @@ public final class JQuickClassReaderTool {
     }
 
     /**
-     * 格式化打印类结构摘要（不含指令），用于快速浏览。
+     * Formats and prints class structure summary (excludes bytecode instructions) for quick inspection.
      *
-     * @param info 类信息
-     * @return 多行文本摘要
+     * @param info class metadata
+     * @return multi‑line text summary
      */
     public static String summarize(JQuickClassInfo info) {
         if (info == null) {

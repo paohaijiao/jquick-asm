@@ -6,11 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * asm-util 访问修饰符工具。
+ * Access flag utility for asm‑util.
  *
- * <p>将 ASM 的 access 标志位（int 位掩码）与 Java 关键字字符串互转，便于人类阅读与配置。
+ * <p>Converts between ASM access flags (int bit‑mask) and Java keyword strings for human‑readable output and configuration.
  *
- * <h3>使用示例</h3>
+ * <h3>Usage Example</h3>
  * <pre>{@code
  * int access = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
  * String text = JQuickAccessUtil.toString(access);   // "public static final"
@@ -23,10 +23,10 @@ public final class JQuickAccessUtil {
     }
 
     /**
-     * 将 access 标志位转换为 Java 关键字字符串。
+     * Converts access flags to Java keyword string.
      *
-     * @param access ASM access 标志位
-     * @return 关键字字符串，如 {@code "public static final"}
+     * @param access ASM access flags
+     * @return keyword string, e.g. {@code "public static final"}
      */
     public static String toString(int access) {
         List<String> list = new ArrayList<>();
@@ -88,117 +88,138 @@ public final class JQuickAccessUtil {
     }
 
     /**
-     * 是否为 public。
+     * Returns {@code true} if the given access flags represent {@code public}.
+     *
+     * @param access ASM access flags
      */
     public static boolean isPublic(int access) {
         return (access & Opcodes.ACC_PUBLIC) != 0;
     }
 
     /**
-     * 是否为 private。
+     * Returns {@code true} if the given access flags represent {@code private}.
+     *
+     * @param access ASM access flags
      */
     public static boolean isPrivate(int access) {
         return (access & Opcodes.ACC_PRIVATE) != 0;
     }
 
     /**
-     * 是否为 protected。
+     * Returns {@code true} if the given access flags represent {@code protected}.
+     *
+     * @param access ASM access flags
      */
     public static boolean isProtected(int access) {
         return (access & Opcodes.ACC_PROTECTED) != 0;
     }
 
     /**
-     * 是否为 static。
+     * Returns {@code true} if the given access flags represent {@code static}.
+     *
+     * @param access ASM access flags
      */
     public static boolean isStatic(int access) {
         return (access & Opcodes.ACC_STATIC) != 0;
     }
 
     /**
-     * 是否为 final。
+     * Returns {@code true} if the given access flags represent {@code final}.
+     *
+     * @param access ASM access flags
      */
     public static boolean isFinal(int access) {
         return (access & Opcodes.ACC_FINAL) != 0;
     }
 
     /**
-     * 是否为 abstract。
+     * Returns {@code true} if the given access flags represent {@code abstract}.
+     *
+     * @param access ASM access flags
      */
     public static boolean isAbstract(int access) {
         return (access & Opcodes.ACC_ABSTRACT) != 0;
     }
 
     /**
-     * 是否为 native 方法（受安全限制保护，禁止修改）。
+     * Returns {@code true} if the given access flags represent a native method (protected by security restrictions; modifications are prohibited).
+     *
+     * @param access ASM access flags
      */
     public static boolean isNative(int access) {
         return (access & Opcodes.ACC_NATIVE) != 0;
     }
 
     /**
-     * 是否为 synchronized 方法。
+     * Returns {@code true} if the given access flags represent a synchronized method.
+     *
+     * @param access ASM access flags
      */
     public static boolean isSynchronized(int access) {
         return (access & Opcodes.ACC_SYNCHRONIZED) != 0;
     }
 
     /**
-     * 是否为接口。
+     * Returns {@code true} if the given access flags represent an interface.
+     *
+     * @param access ASM access flags
      */
     public static boolean isInterface(int access) {
         return (access & Opcodes.ACC_INTERFACE) != 0;
     }
 
     /**
-     * 是否为构造方法（方法名为 {@code <init>}）。
+     * Returns {@code true} if the method is a constructor (method name is {@code <init>}).
      *
-     * @param name 方法名
-     * @return true 表示是构造方法
+     * @param name Method name
+     * @return {@code true} if it is a constructor
      */
     public static boolean isConstructor(String name) {
         return JQuickAsmConstants.INIT.equals(name);
     }
 
     /**
-     * 是否为静态初始化块（方法名为 {@code <clinit>}）。
+     * Returns {@code true} if the method is a static initializer block (method name is {@code <clinit>}).
+     *
+     * @param name Method name
+     * @return {@code true} if it is a static initializer block
      */
     public static boolean isStaticInitializer(String name) {
         return JQuickAsmConstants.CLINIT.equals(name);
     }
 
     /**
-     * 修改 access 的可见性：清除原可见性位并设置新可见性。
+     * Modifies the visibility of access flags: clears original visibility bits and sets the new visibility.
      *
-     * @param access     原 access
-     * @param visibility 新可见性，取值为 {@link Opcodes#ACC_PUBLIC}、
-     *                   {@link Opcodes#ACC_PROTECTED}、{@link Opcodes#ACC_PRIVATE} 或 0（包级）
-     * @return 修改后的 access
+     * @param access     Original access flags
+     * @param visibility New visibility; valid values are {@link Opcodes#ACC_PUBLIC},
+     *                   {@link Opcodes#ACC_PROTECTED}, {@link Opcodes#ACC_PRIVATE}, or 0 for package‑private access.
+     * @return Modified access flags
      */
     public static int changeVisibility(int access, int visibility) {
-        // 清除原可见性位
+        // Clear original visibility bits
         access &= ~(Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED | Opcodes.ACC_PRIVATE);
         access |= visibility;
         return access;
     }
 
     /**
-     * 添加标志位。
+     * Adds the given flag bit.
      *
-     * @param access 原 access
-     * @param flag   要添加的标志位
-     * @return 修改后的 access
+     * @param access Original access flags
+     * @param flag   Flag bit to add
+     * @return Modified access flags
      */
     public static int addFlag(int access, int flag) {
         return access | flag;
     }
 
     /**
-     * 移除标志位。
+     * Removes the given flag bit.
      *
-     * @param access 原 access
-     * @param flag   要移除的标志位
-     * @return 修改后的 access
+     * @param access Original access flags
+     * @param flag   Flag bit to remove
+     * @return Modified access flags
      */
     public static int removeFlag(int access, int flag) {
         return access & ~flag;

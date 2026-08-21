@@ -15,12 +15,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * asm-writer 类生成工具：内存动态构建并生成 Class。
+ * asm‑writer class‑generation tool: dynamically construct and generate Class in memory.
  *
- * <p>采用流式 API，无需手写 {@link org.objectweb.asm.ClassVisitor}，
- * 即可完成「从零生成类 → 加载为 Class 对象 / 写出 class 文件」全流程。
+ * <p>Adopts fluent‑style API. There is no need to manually write {@link org.objectweb.asm.ClassVisitor},
+ * to complete the full workflow: generate class from scratch → load as {@link Class} object / write out class file.
  *
- * <h3>使用示例</h3>
+ * <h3>Usage Example</h3>
  * <pre>{@code
  * byte[] bytes = JQuickClassWriterTool.builder("com.demo.Hello")
  *     .extendSuper("com.demo.Base")
@@ -36,10 +36,10 @@ import java.util.List;
  *         mv.visitMaxs(2, 1);
  *         mv.visitEnd();
  *     })
- *     .build();                       // 返回字节码
+ *     .build();                       // return bytecode array
  *
- * Class<?> clazz = JQuickClassWriterTool.define(bytes);   // 内存加载
- * JQuickClassWriterTool.writeToFile(bytes, "com.demo.Hello", "d:/out");  // 写出文件
+ * Class<?> clazz = JQuickClassWriterTool.define(bytes);   // load class in‑memory
+ * JQuickClassWriterTool.writeToFile(bytes, "com.demo.Hello", "d:/out");  // write class to disk
  * }</pre>
  */
 public final class JQuickClassWriterTool {
@@ -48,51 +48,54 @@ public final class JQuickClassWriterTool {
     }
 
     /**
-     * 创建类构建器。
+     * Create class builder for dynamic class generation.
      *
-     * @param className 全限定类名，如 {@code "com.demo.Hello"}
+     * @param className Fully qualified class name, e.g. {@code "com.demo.Hello"}
      */
     public static Builder builder(String className) {
         return new Builder(className);
     }
 
     /**
-     * 内存加载字节码为 {@link Class} 对象。
+     * Load {@link Class} object from bytecode in memory.
      *
-     * @param bytes     字节码
-     * @param className 全限定类名
+     * @param bytes     Bytecode
+     * @param className Fully qualified class name
      */
     public static Class<?> define(byte[] bytes, String className) {
         return JQuickBytecodeUtil.defineClass(className, bytes);
     }
 
     /**
-     * 写出字节码到本地 class 文件。
+     * Write bytecode to local class file.
      *
-     * @param bytes     字节码
-     * @param className 全限定类名
-     * @param outputDir 输出根目录
-     * @return 文件绝对路径
+     * @param bytes     Bytecode
+     * @param className Fully qualified class name
+     * @param outputDir Output directory path
+     * @return Absolute file path
      */
     public static String writeToFile(byte[] bytes, String className, String outputDir) {
         return JQuickBytecodeUtil.writeToFile(className, bytes, outputDir);
     }
 
     /**
-     * 格式化打印字节码。
+     * Format print bytecode.
+     *
+     * @param bytes Bytecode
+     * @return Formatted string
      */
     public static String dump(byte[] bytes) {
         return JQuickBytecodeUtil.dump(bytes);
     }
 
-    // 防止未使用导入告警
+    // forbid unused import warning warning
     @SuppressWarnings("unused")
     private static void unused() {
         JQuickAccessUtil.isPublic(0);
     }
 
     /**
-     * 方法体回调接口：调用方在此写入方法指令。
+     * Method body callback interface: caller writes method instructions here.
      */
     @FunctionalInterface
     public interface MethodBody {
@@ -100,30 +103,38 @@ public final class JQuickClassWriterTool {
     }
 
     /**
-     * 流式类构建器。
+     * Fluent class builder for dynamic class generation.
      */
     public static final class Builder {
 
         private final String className;
+
         private final String internalName;
+
         private final List<String> interfaces = new ArrayList<>();
+
         private final List<FieldSpec> fields = new ArrayList<>();
+
         private final List<MethodSpec> methods = new ArrayList<>();
+
         private final List<AnnotationSpec> annotations = new ArrayList<>();
+
         private int version = JQuickAsmConstants.DEFAULT_CLASS_VERSION;
+
         private int access = Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER;
+
         private String superName = JQuickAsmConstants.OBJECT_INTERNAL_NAME;
 
         Builder(String className) {
             if (className == null || className.isEmpty()) {
-                throw new IllegalArgumentException("className 不能为空");
+                throw new IllegalArgumentException("className cannot be empty or null");
             }
             this.className = className;
             this.internalName = JQuickTypeUtil.classNameToInternal(className);
         }
 
         /**
-         * 设置字节码版本，默认 JDK8。
+         * Set bytecode version, default is JDK8.
          */
         public Builder version(int version) {
             this.version = version;
@@ -131,7 +142,7 @@ public final class JQuickClassWriterTool {
         }
 
         /**
-         * 设置访问修饰符。
+         * Set access modifier.
          */
         public Builder access(int access) {
             this.access = access;
@@ -139,7 +150,7 @@ public final class JQuickClassWriterTool {
         }
 
         /**
-         * 设置父类（点分隔全限定名）。
+         * Set super class name (dot-separated fully qualified name).
          */
         public Builder extendSuper(String superClassName) {
             this.superName = JQuickTypeUtil.classNameToInternal(superClassName);
@@ -147,7 +158,7 @@ public final class JQuickClassWriterTool {
         }
 
         /**
-         * 实现接口（Class 形式）。
+         * Implement interface (class form).
          */
         public Builder implementInterface(Class<?> itf) {
             this.interfaces.add(JQuickTypeUtil.toInternalName(itf));
@@ -155,7 +166,7 @@ public final class JQuickClassWriterTool {
         }
 
         /**
-         * 实现接口（全限定名形式）。
+         * Implement interface (fully qualified name form).
          */
         public Builder implementInterface(String interfaceName) {
             this.interfaces.add(JQuickTypeUtil.classNameToInternal(interfaceName));
@@ -163,7 +174,7 @@ public final class JQuickClassWriterTool {
         }
 
         /**
-         * 新增字段（带初始值与签名）。
+         * Add field with initial value and signature.
          */
         public Builder addField(int access, String name, String descriptor,
                                 String signature, Object value) {
@@ -172,14 +183,14 @@ public final class JQuickClassWriterTool {
         }
 
         /**
-         * 新增字段。
+         * Add field without initial value and signature.
          */
         public Builder addField(int access, String name, String descriptor) {
             return addField(access, name, descriptor, null, null);
         }
 
         /**
-         * 基于 {@link JQuickFieldInfo} 新增字段。
+         * Add field based on {@link JQuickFieldInfo}.
          */
         public Builder addField(JQuickFieldInfo field) {
             fields.add(new FieldSpec(field.getAccess(), field.getName(),
@@ -188,34 +199,32 @@ public final class JQuickClassWriterTool {
         }
 
         /**
-         * 新增方法，方法体由 {@code body} 回调填充。
+         * Add method.
          */
-        public Builder addMethod(int access, String name, String descriptor,
-                                 String signature, String[] exceptions, MethodBody body) {
+        public Builder addMethod(int access, String name, String descriptor, String signature, String[] exceptions, MethodBody body) {
             methods.add(new MethodSpec(access, name, descriptor, signature, exceptions, body));
             return this;
         }
 
         /**
-         * 新增方法（无签名/异常）。
+         * Add method without signature and exceptions.
          */
         public Builder addMethod(int access, String name, String descriptor, MethodBody body) {
             return addMethod(access, name, descriptor, null, null, body);
         }
 
         /**
-         * 基于 {@link JQuickMethodInfo} 新增方法（需提供方法体回调）。
+         * Add method based on {@link JQuickMethodInfo}.
          */
         public Builder addMethod(JQuickMethodInfo method, MethodBody body) {
             String[] exs = method.getExceptions().isEmpty() ? null
                     : method.getExceptions().toArray(new String[0]);
-            methods.add(new MethodSpec(method.getAccess(), method.getName(),
-                    method.getDescriptor(), method.getSignature(), exs, body));
+            methods.add(new MethodSpec(method.getAccess(), method.getName(), method.getDescriptor(), method.getSignature(), exs, body));
             return this;
         }
 
         /**
-         * 给类新增注解。
+         * Add annotation to class.
          */
         public Builder addAnnotation(String descriptor) {
             annotations.add(new AnnotationSpec(descriptor));
@@ -223,7 +232,7 @@ public final class JQuickClassWriterTool {
         }
 
         /**
-         * 给类新增注解（Class 形式）。
+         * Add annotation to class.
          */
         public Builder addAnnotation(Class<? extends java.lang.annotation.Annotation> annType) {
             annotations.add(new AnnotationSpec(JQuickTypeUtil.toDescriptor(annType)));
@@ -231,33 +240,30 @@ public final class JQuickClassWriterTool {
         }
 
         /**
-         * 构建字节码。
+         * Build bytecode.
          *
-         * @return 类字节码
+         * @return Bytecode
          */
         public byte[] build() {
             ClassWriter cw = new ClassWriter(JQuickAsmConstants.WRITER_FLAGS);
             String[] itfs = interfaces.isEmpty() ? null : interfaces.toArray(new String[0]);
             cw.visit(version, access, internalName, null, superName, itfs);
-
-            // 类注解
+            // Class annotations
             for (AnnotationSpec ann : annotations) {
                 cw.visitAnnotation(ann.descriptor, true).visitEnd();
             }
-
-            // 字段
+            // Fields
             for (FieldSpec f : fields) {
                 FieldVisitor fv = cw.visitField(f.access, f.name, f.descriptor, f.signature, f.value);
                 fv.visitEnd();
             }
-
-            // 方法
+            // Methods
             for (MethodSpec m : methods) {
                 MethodVisitor mv = cw.visitMethod(m.access, m.name, m.descriptor, m.signature, m.exceptions);
                 if (m.body != null) {
                     m.body.write(mv);
                 } else {
-                    // abstract/native 方法无方法体
+                    // abstract/native methods
                 }
                 mv.visitEnd();
             }
@@ -267,14 +273,16 @@ public final class JQuickClassWriterTool {
         }
 
         /**
-         * 构建并直接内存加载为 Class。
+         * Build and define class in memory.
+         *
+         * @return Class
          */
         public Class<?> buildAndDefine() {
             return JQuickBytecodeUtil.defineClass(className, build());
         }
 
         /**
-         * 构建并写出 class 文件。
+         * Build and write class file.
          */
         public String buildAndWrite(String outputDir) {
             return JQuickBytecodeUtil.writeToFile(className, build(), outputDir);
@@ -282,10 +290,15 @@ public final class JQuickClassWriterTool {
     }
 
     private static class FieldSpec {
+
         final int access;
+
         final String name;
+
         final String descriptor;
+
         final String signature;
+
         final Object value;
 
         FieldSpec(int access, String name, String descriptor, String signature, Object value) {
@@ -298,15 +311,20 @@ public final class JQuickClassWriterTool {
     }
 
     private static class MethodSpec {
+
         final int access;
+
         final String name;
+
         final String descriptor;
+
         final String signature;
+
         final String[] exceptions;
+
         final MethodBody body;
 
-        MethodSpec(int access, String name, String descriptor, String signature,
-                   String[] exceptions, MethodBody body) {
+        MethodSpec(int access, String name, String descriptor, String signature, String[] exceptions, MethodBody body) {
             this.access = access;
             this.name = name;
             this.descriptor = descriptor;
@@ -317,6 +335,7 @@ public final class JQuickClassWriterTool {
     }
 
     private static class AnnotationSpec {
+
         final String descriptor;
 
         AnnotationSpec(String descriptor) {

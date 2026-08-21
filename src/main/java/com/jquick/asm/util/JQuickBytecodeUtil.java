@@ -14,17 +14,18 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * asm-util 字节码工具。
+ * asm‑util bytecode utility.
  *
- * <p>提供字节码与 {@link Class} 对象互转、内存动态加载、本地文件写出、格式化打印等通用能力。
+ * <p>Provides common utilities such as conversion between bytecode and {@link Class} objects,
+ * in‑memory dynamic class loading, writing class files to local disk, and formatted bytecode dumping.
  *
- * <h3>使用示例</h3>
+ * <h3>Usage Example</h3>
  * <pre>{@code
- * // 1. 内存加载
+ * // 1. Load class in‑memory
  * Class<?> clazz = JQuickBytecodeUtil.defineClass("com.demo.Foo", bytes);
- * // 2. 写出 class 文件
+ * // 2. Write class file to disk
  * JQuickBytecodeUtil.writeToFile("com.demo.Foo", bytes, "d:/out");
- * // 3. 格式化打印
+ * // 3. Format and print bytecode
  * String text = JQuickBytecodeUtil.dump(bytes);
  * System.out.println(text);
  * }</pre>
@@ -32,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class JQuickBytecodeUtil {
 
     /**
-     * 内存类加载器：每个生成的 Class 使用独立加载器，便于多次重定义同名类。
+     * Memory class loader: each generated Class uses a separate loader, allowing multiple redefinitions of the same class.
      */
     private static volatile ByteArrayClassLoader currentLoader = new ByteArrayClassLoader();
 
@@ -40,20 +41,20 @@ public final class JQuickBytecodeUtil {
     }
 
     /**
-     * 将字节数组加载为 {@link Class} 对象（内存动态生成）。
+     * Load a {@link Class} object from a byte array (in‑memory dynamic generation).
      *
-     * @param className 全限定类名，如 {@code "com.demo.Foo"}
-     * @param bytes     字节码
-     * @return 加载后的 Class 对象
+     * @param className Fully qualified class name, e.g. {@code "com.demo.Foo"}
+     * @param bytes     Bytecode
+     * @return Loaded Class object
      */
     public static Class<?> defineClass(String className, byte[] bytes) {
         if (className == null || className.isEmpty()) {
-            throw new IllegalArgumentException("className 不能为空");
+            throw new IllegalArgumentException("className cannot be null or empty");
         }
         if (bytes == null || bytes.length == 0) {
-            throw new IllegalArgumentException("bytes 不能为空");
+            throw new IllegalArgumentException("bytes cannot be null or empty array");
         }
-        // 为避免「同名类已加载」异常，每次定义使用新的加载器实例
+        // To avoid the exception of 'class with the same name already loaded', a new loader instance is defined each time
         ByteArrayClassLoader loader = new ByteArrayClassLoader();
         Class<?> clazz = loader.define(className, bytes);
         currentLoader = loader;
@@ -61,22 +62,21 @@ public final class JQuickBytecodeUtil {
     }
 
     /**
-     * 将字节码写入本地 class 文件。
+     * Write a class file to local disk.
      *
-     * @param className 全限定类名，用于推算目录结构
-     * @param bytes     字节码
-     * @param outputDir 输出根目录，如 {@code "d:/out"}
-     * @return 写入的文件绝对路径
+     * @param className Fully qualified class name, used to calculate directory structure
+     * @param outputDir Output root directory, e.g. {@code "d:/out"}
+     * @return Absolute path of the written file
      */
     public static String writeToFile(String className, byte[] bytes, String outputDir) {
         if (className == null || className.isEmpty()) {
-            throw new IllegalArgumentException("className 不能为空");
+            throw new IllegalArgumentException("className Cannot be empty");
         }
         if (bytes == null || bytes.length == 0) {
-            throw new IllegalArgumentException("bytes 不能为空");
+            throw new IllegalArgumentException("bytes cannot be null or empty array");
         }
         if (outputDir == null || outputDir.isEmpty()) {
-            throw new IllegalArgumentException("outputDir 不能为空");
+            throw new IllegalArgumentException("outputDir cannot be null or empty");
         }
         String relative = className.replace('.', '/').concat(".class");
         Path target = Paths.get(outputDir, relative);
@@ -85,40 +85,40 @@ public final class JQuickBytecodeUtil {
             Files.write(target, bytes);
             return target.toAbsolutePath().toString();
         } catch (IOException e) {
-            throw new RuntimeException("写入 class 文件失败: " + target, e);
+            throw new RuntimeException("Failed to write class file: " + target, e);
         }
     }
 
     /**
-     * 将字节码格式化打印为人类可读的指令文本。
+     * Format bytecode to human-readable instruction text.
      *
-     * @param bytes 字节码
-     * @return 格式化文本
+     * @param bytes Bytecode
+     * @return Formatted text
      */
     public static String dump(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
-            throw new IllegalArgumentException("bytes 不能为空");
+            throw new IllegalArgumentException("bytes cannot be null or empty array");
         }
         ClassReader reader = new ClassReader(bytes);
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         Printer printer = new Textifier();
         TraceClassVisitor trace = new TraceClassVisitor(null, printer, pw);
-        // 打印时保留所有信息（不 SKIP_DEBUG）以便看到行号
+        // Do not skip DEBUG to keep line numbers
         reader.accept(trace, ClassReader.SKIP_FRAMES);
         pw.flush();
         return sw.toString();
     }
 
     /**
-     * 获取当前内存类加载器（供反射加载资源使用）。
+     * Get the current memory class loader (for reflection loading resources).
      */
     public static ClassLoader currentClassLoader() {
         return currentLoader;
     }
 
     /**
-     * 字节数组类加载器：在内存中将字节数组定义为 Class。
+     * Byte array class loader: used to load byte arrays as {@link Class} objects in memory.
      */
     private static class ByteArrayClassLoader extends ClassLoader {
 

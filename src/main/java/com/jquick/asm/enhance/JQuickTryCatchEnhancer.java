@@ -12,29 +12,29 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * asm-enhance 方法异常捕获环绕增强器。
+ * asm‑enhance method exception‑capture around enhancer.
  *
- * <p>对匹配方法用 try-catch 环绕整个方法体，实现「进入埋点 + 正常返回埋点 +
- * 异常捕获埋点」。基于 {@link JQuickBaseMethodVisitor} + {@link Label} try-catch 表项实现，
- * 不依赖 asm-commons。
+ * <p>Wraps matched method body entirely with try‑catch block to implement entry, normal‑return
+ * and exception‑capture instrumentation. Built upon {@link JQuickBaseMethodVisitor} and {@link Label}
+ * try‑catch table entries, no dependency on asm‑commons.
  *
- * <h3>字节码结构</h3>
+ * <h3>Bytecode Structure</h3>
  * <pre>{@code
- * onEnter                              // try 之前
+ * onEnter                              // before try‑block
  * startLabel:
- *   <原始方法体>
- *   onExit                             // 返回前（在 try 内）
+ *   <original method body>
+ *   onExit                             // before return (inside try‑block)
  *   return
  * endLabel:
  * handlerLabel:   // catch Throwable [startLabel, endLabel)
- *   onException   // 栈顶为异常，钩子需保留
- *   ATHROW        // 重抛
+ *   onException   // throwable sits on stack top, must be preserved by hook
+ *   ATHROW        // re‑throw exception
  * }</pre>
  *
- * <h3>使用示例</h3>
+ * <h3>Usage Example</h3>
  * <pre>{@code
  * byte[] enhanced = JQuickTryCatchEnhancer.from(bytes)
- *     .match(" risky ")
+ *     .match("risky")
  *     .advice(JQuickTryCatchAdvice.builder()
  *         .onEnter(ctx -> Tracer.print(ctx, "enter"))
  *         .onException(ctx -> {
@@ -47,6 +47,7 @@ import java.util.function.Predicate;
  *     .apply();
  * }</pre>
  */
+
 public final class JQuickTryCatchEnhancer {
 
     private final byte[] source;
@@ -64,17 +65,17 @@ public final class JQuickTryCatchEnhancer {
     }
 
     /**
-     * 从字节码创建增强器。
+     * Create an enhancer from bytecode.
      */
     public static JQuickTryCatchEnhancer from(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
-            throw new IllegalArgumentException("bytes 不能为空");
+            throw new IllegalArgumentException("bytes cannot be null or empty array");
         }
         return new JQuickTryCatchEnhancer(bytes);
     }
 
     /**
-     * 设置安全守卫。
+     * Set the guard to use for method enhancement.
      */
     public JQuickTryCatchEnhancer guard(JQuickEnhanceGuard guard) {
         this.guard = guard == null ? JQuickEnhanceGuard.DEFAULT : guard;
@@ -82,7 +83,7 @@ public final class JQuickTryCatchEnhancer {
     }
 
     /**
-     * 匹配所有可安全修改的方法。
+     * Match all modifiable methods.
      */
     public JQuickTryCatchEnhancer matchAll() {
         this.matchAll = true;
@@ -90,7 +91,7 @@ public final class JQuickTryCatchEnhancer {
     }
 
     /**
-     * 按方法名匹配。
+     * Match methods by name.
      */
     public JQuickTryCatchEnhancer match(String methodName) {
         matchers.add(m -> m.name.equals(methodName));
@@ -98,7 +99,7 @@ public final class JQuickTryCatchEnhancer {
     }
 
     /**
-     * 按方法名+描述符精确匹配。
+     * Match methods by name and descriptor.
      */
     public JQuickTryCatchEnhancer match(String methodName, String descriptor) {
         matchers.add(m -> m.name.equals(methodName) && m.descriptor.equals(descriptor));
@@ -106,7 +107,7 @@ public final class JQuickTryCatchEnhancer {
     }
 
     /**
-     * 自定义匹配谓词。
+     * Custom match predicate.
      */
     public JQuickTryCatchEnhancer match(Predicate<JQuickMethodEnhancer.MethodMeta> predicate) {
         if (predicate != null) {
@@ -116,7 +117,7 @@ public final class JQuickTryCatchEnhancer {
     }
 
     /**
-     * 设置环绕通知。
+     * Set the advice to use for method enhancement.
      */
     public JQuickTryCatchEnhancer advice(JQuickTryCatchAdvice advice) {
         this.advice = advice == null ? JQuickTryCatchAdvice.builder().build() : advice;
@@ -124,7 +125,7 @@ public final class JQuickTryCatchEnhancer {
     }
 
     /**
-     * 执行增强并返回新字节码。
+     * Apply the enhancement to the bytecode and return the new bytecode.
      */
     public byte[] apply() {
         ClassReader reader = new ClassReader(source);
@@ -151,14 +152,14 @@ public final class JQuickTryCatchEnhancer {
     }
 
     /**
-     * 执行增强并内存加载。
+     * Apply the enhancement to the bytecode and load it into memory.
      */
     public Class<?> applyAndDefine(String className) {
         return JQuickBytecodeUtil.defineClass(className, apply());
     }
 
     /**
-     * 执行增强并写出文件。
+     * Apply the enhancement to the bytecode and write it to a file.
      */
     public String applyAndWrite(String className, String outputDir) {
         return JQuickBytecodeUtil.writeToFile(className, apply(), outputDir);
@@ -177,17 +178,22 @@ public final class JQuickTryCatchEnhancer {
     }
 
     /**
-     * try-catch 环绕方法访问器。
+     * Enhanced try-catch method visitor.
      */
     private static final class TryCatchMethodVisitor extends JQuickBaseMethodVisitor {
 
         private final String ownerInternalName;
+
         private final JQuickTryCatchAdvice advice;
 
         private final Label startLabel = new Label();
+
         private final Label endLabel = new Label();
+
         private final Label handlerLabel = new Label();
+
         private boolean tryRegistered = false;
+
         private boolean handlerEmitted = false;
 
         TryCatchMethodVisitor(int api, MethodVisitor mv, int access, String name, String descriptor, String ownerInternalName, JQuickTryCatchAdvice advice) {
@@ -199,10 +205,10 @@ public final class JQuickTryCatchEnhancer {
         @Override
         public void visitCode() {
             super.visitCode();
-            // onEnter 在 try 块之前，不受捕获影响
+            // OnEnter is not affected by capture before the try block
             JQuickMethodContext ctx = new JQuickMethodContext(mv, access, name, descriptor, ownerInternalName);
             advice.onEnter(ctx);
-            // 注册 try-catch：捕获 [startLabel, endLabel) 的 Throwable，跳转 handlerLabel
+            // Register try catch: Capture Throwable for [startLabel, endLabel], jump handlerLabels
             mv.visitTryCatchBlock(startLabel, endLabel, handlerLabel, "java/lang/Throwable");
             tryRegistered = true;
             mv.visitLabel(startLabel);
@@ -210,48 +216,48 @@ public final class JQuickTryCatchEnhancer {
 
         @Override
         protected void onMethodEnter() {
-            // onEnter 已在 visitCode 中手动处理，禁用基类默认头部插桩
+            //OnEnter has been manually processed in VisitCode, disabling the default header stake of the base class
         }
 
         @Override
         protected void onMethodExit(int opcode) {
-            // ATHROW（原始方法主动抛出）：已在 try 内，由 handler 统一处理，不在此埋点
+            // ATHROW (raw method actively thrown): already in try, handled by handler, not buried here
             if (opcode == Opcodes.ATHROW) {
                 return;
             }
-            // 正常返回前埋点
+            // Normal return to pre burial point
             JQuickMethodContext ctx = new JQuickMethodContext(mv, access, name, descriptor, ownerInternalName);
             advice.onExit(ctx);
         }
 
         @Override
         public void visitMaxs(int maxStack, int maxLocals) {
-            // 必须在 visitMaxs 之前发出 catch 处理块指令，符合 ASM 调用顺序约束
+            // The catch block instruction must be issued before visitMaxs, in compliance with ASM call order constraints
             emitHandler();
             super.visitMaxs(maxStack, maxLocals);
         }
 
         @Override
         public void visitEnd() {
-            // 兜底：若上游未调用 visitMaxs（理论上不会发生），在此补发
+            //Bottom line: If visitMaxs is not called upstream (theoretically not happening), reissue here
             emitHandler();
             super.visitEnd();
         }
 
         /**
-         * 发出 try 块结束标签与 catch 处理块（仅一次）。
+         * Issue the try block end tag and catch processing block (only once).
          */
         private void emitHandler() {
             if (!tryRegistered || handlerEmitted) {
                 return;
             }
-            // 标记 try 块结束
+            // Mark the end of the try block
             mv.visitLabel(endLabel);
-            // catch 处理块：栈顶为捕获的异常对象
+            // Catch processing block: The stack top is the exception object captured
             mv.visitLabel(handlerLabel);
             JQuickMethodContext ctx = new JQuickMethodContext(mv, access, name, descriptor, ownerInternalName);
             advice.onException(ctx);
-            // 重抛异常（onException 钩子需保留异常在栈顶）
+            // Resubmit exception (the onEException hook needs to keep the exception at the top of the stack)
             mv.visitInsn(Opcodes.ATHROW);
             handlerEmitted = true;
         }

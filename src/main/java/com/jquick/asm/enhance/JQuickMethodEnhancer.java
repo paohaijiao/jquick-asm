@@ -15,19 +15,16 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * asm-enhance 方法字节码编辑器。
+ * ASM‑enhance method byte‑code editor.
+ * <p>Provides method‑head, tail and pre‑return advice, abstract low‑level {@link org.objectweb.asm.MethodVisitor} instruction handling.
+ * Implemented via {@link JQuickBaseMethodVisitor} {@code onMethodEnter}/{@code onMethodExit} hooks.
+ * <p>All enhancements guarded by {@link JQuickEnhanceGuard}: skip constructor / native / abstract methods automatically.
+ * Supports method whitelist/blacklist and custom matchers.
  *
- * <p>对外提供「方法头部插入」「方法尾部插入」「方法返回前插入逻辑」能力，
- * 屏蔽 {@link org.objectweb.asm.MethodVisitor} 的指令级处理。基于
- * {@link JQuickBaseMethodVisitor} 的 onMethodEnter/onMethodExit 钩子实现。
- *
- * <p>所有增强操作先经 {@link JQuickEnhanceGuard} 安全校验，构造方法/native/abstract
- * 方法自动跳过；可配置方法名黑/白名单与自定义匹配器。
- *
- * <h3>使用示例</h3>
+ * <h3>Examples</h3>
  * <pre>{@code
  * byte[] enhanced = JQuickMethodEnhancer.from(originalBytes)
- *     .match("doSomething")            // 仅增强指定方法
+ *     .match("doSomething")
  *     .advice(JQuickMethodAdvice.builder()
  *         .onEnter(ctx -> {
  *             MethodVisitor mv = ctx.methodVisitor();
@@ -41,6 +38,7 @@ import java.util.function.Predicate;
  * Class<?> clazz = JQuickBytecodeUtil.defineClass("com.demo.Foo", enhanced);
  * }</pre>
  */
+
 public final class JQuickMethodEnhancer {
 
     private final byte[] source;
@@ -58,23 +56,23 @@ public final class JQuickMethodEnhancer {
     }
 
     /**
-     * 从字节码创建增强器。
+     * Create an enhancer from bytecode。
      */
     public static JQuickMethodEnhancer from(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
-            throw new IllegalArgumentException("bytes 不能为空");
+            throw new IllegalArgumentException("Bytes cannot be empty");
         }
         return new JQuickMethodEnhancer(bytes);
     }
 
-    // 抑制未使用导入告警
+    // Suppress unused import alerts
     @SuppressWarnings("unused")
     private static void unused() {
         new HashSet<Set<?>>();
     }
 
     /**
-     * 设置自定义安全守卫。
+     * Set up custom security guards.
      */
     public JQuickMethodEnhancer guard(JQuickEnhanceGuard guard) {
         this.guard = guard == null ? JQuickEnhanceGuard.DEFAULT : guard;
@@ -82,7 +80,7 @@ public final class JQuickMethodEnhancer {
     }
 
     /**
-     * 匹配所有可安全修改的方法（构造方法/native/abstract 自动排除）。
+     * Match all methods that can be safely modified (constructor/native/abstract automatically excluded).
      */
     public JQuickMethodEnhancer matchAll() {
         this.matchAll = true;
@@ -90,7 +88,7 @@ public final class JQuickMethodEnhancer {
     }
 
     /**
-     * 按方法名匹配（重载方法都会被增强）。
+     * Match by method name (overloaded methods will be enhanced).
      */
     public JQuickMethodEnhancer match(String methodName) {
         matchers.add(m -> m.name.equals(methodName));
@@ -98,7 +96,7 @@ public final class JQuickMethodEnhancer {
     }
 
     /**
-     * 按方法名+描述符精确匹配。
+     * Match exactly by method name+descriptor.
      */
     public JQuickMethodEnhancer match(String methodName, String descriptor) {
         matchers.add(m -> m.name.equals(methodName) && m.descriptor.equals(descriptor));
@@ -106,7 +104,7 @@ public final class JQuickMethodEnhancer {
     }
 
     /**
-     * 自定义匹配谓词。
+     * Customize matching predicates.
      */
     public JQuickMethodEnhancer match(Predicate<MethodMeta> predicate) {
         if (predicate != null) {
@@ -116,7 +114,7 @@ public final class JQuickMethodEnhancer {
     }
 
     /**
-     * 设置增强通知。
+     * Set up enhanced notifications
      */
     public JQuickMethodEnhancer advice(JQuickMethodAdvice advice) {
         this.advice = advice == null ? JQuickMethodAdvice.builder().build() : advice;
@@ -124,24 +122,23 @@ public final class JQuickMethodEnhancer {
     }
 
     /**
-     * 执行增强并返回新字节码。
+     * Perform enhancement and return new bytecode。
      */
     public byte[] apply() {
         ClassReader reader = new ClassReader(source);
         ClassWriter cw = new ClassWriter(reader, JQuickAsmConstants.WRITER_FLAGS);
         JQuickBaseClassVisitor cv = new JQuickBaseClassVisitor(JQuickAsmConstants.ASM_API, cw, null);
-        cv.setMethodVisitorFactory((api, downstream, access, name, descriptor, signature,
-                                    exceptions, classInfo) -> {
+        cv.setMethodVisitorFactory((api, downstream, access, name, descriptor, signature, exceptions, classInfo) -> {
             String owner = classInfo == null ? null : classInfo.getInternalName();
             MethodMeta meta = new MethodMeta(access, name, descriptor);
             if (!shouldEnhance(meta)) {
-                return downstream; // 不匹配：原样转发
+                return downstream; //Mismatch: Forward as the original method
             }
-            // 安全校验：不满足则跳过增强（不抛异常，保证流程不中断）
+            // Security verification: If not met, skip enhancement (do not throw exceptions, ensure uninterrupted process)
             try {
                 guard.checkModifiable(name, descriptor, access);
             } catch (SecurityException e) {
-                // 跳过不可增强方法
+                // Skip non enhancerable methods
                 return downstream;
             }
             final String ownerInternalName = owner;
@@ -165,14 +162,14 @@ public final class JQuickMethodEnhancer {
     }
 
     /**
-     * 执行增强并内存加载。
+     * Perform enhancement and memory loading。
      */
     public Class<?> applyAndDefine(String className) {
         return JQuickBytecodeUtil.defineClass(className, apply());
     }
 
     /**
-     * 执行增强并写出文件。
+     * Execute enhancement and write the file。
      */
     public String applyAndWrite(String className, String outputDir) {
         return JQuickBytecodeUtil.writeToFile(className, apply(), outputDir);
@@ -191,11 +188,14 @@ public final class JQuickMethodEnhancer {
     }
 
     /**
-     * 方法匹配元数据。
+     * Method matching metadata。
      */
     public static final class MethodMeta {
+
         public final int access;
+
         public final String name;
+
         public final String descriptor;
 
         public MethodMeta(int access, String name, String descriptor) {

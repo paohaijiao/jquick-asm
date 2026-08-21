@@ -12,21 +12,21 @@ import org.objectweb.asm.*;
 import java.util.*;
 
 /**
- * asm-writer 类结构修改工具：对已有字节码进行增删改查。
+ * asm‑writer class‑structure modification tool: perform create, read, update and delete operations on existing bytecode.
  *
- * <p>支持能力：
+ * <p>Supported capabilities:
  * <ul>
- *   <li>新增/删除字段</li>
- *   <li>新增/删除方法</li>
- *   <li>修改方法/字段/类的访问权限</li>
- *   <li>给类/方法/字段新增注解</li>
- *   <li>删除注解</li>
+ *   <li>Add / remove fields</li>
+ *   <li>Add / remove methods</li>
+ *   <li>Modify access flags for classes, methods and fields</li>
+ *   <li>Add annotations to classes, methods and fields</li>
+ *   <li>Remove annotations</li>
  * </ul>
  *
- * <p>所有修改操作均通过 {@link JQuickEnhanceGuard#DEFAULT} 安全校验；
- * 构造方法、native 方法受保护，不允许删除或破坏性修改。
+ * <p>All modification operations pass security validation via {@link JQuickEnhanceGuard#DEFAULT};
+ * constructors and native methods are protected against deletion or destructive modification.
  *
- * <h3>使用示例</h3>
+ * <h3>Usage Example</h3>
  * <pre>{@code
  * byte[] modified = JQuickClassModifierTool.from(originalBytes)
  *     .addField(Opcodes.ACC_PRIVATE, "counter", "I")
@@ -36,6 +36,7 @@ import java.util.*;
  *     .apply();
  * }</pre>
  */
+
 public final class JQuickClassModifierTool {
 
     private final byte[] source;
@@ -71,11 +72,14 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 从字节码创建修改器。
+     * Create modifier tool from bytecode.
+     *
+     * @param bytes Bytecode array
+     * @return Modifier tool instance
      */
     public static JQuickClassModifierTool from(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
-            throw new IllegalArgumentException("bytes 不能为空");
+            throw new IllegalArgumentException("bytes cannot be null");
         }
         return new JQuickClassModifierTool(bytes);
     }
@@ -90,7 +94,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 设置自定义安全守卫。
+     * Set custom security guard.
      */
     public JQuickClassModifierTool guard(JQuickEnhanceGuard guard) {
         this.guard = guard == null ? JQuickEnhanceGuard.DEFAULT : guard;
@@ -98,7 +102,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 新增字段。
+     * Add field.
      */
     public JQuickClassModifierTool addField(int access, String name, String descriptor, Object value) {
         fieldsToAdd.add(new JQuickFieldInfo(access, name, descriptor, null, value));
@@ -106,14 +110,14 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 新增字段（无初始值）。
+     * Add field (no initial value).
      */
     public JQuickClassModifierTool addField(int access, String name, String descriptor) {
         return addField(access, name, descriptor, null);
     }
 
     /**
-     * 删除字段。
+     * Remove field.
      */
     public JQuickClassModifierTool removeField(String name) {
         fieldsToRemove.add(name);
@@ -121,7 +125,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 修改字段访问权限。
+     * Modify field access flag.
      */
     public JQuickClassModifierTool changeFieldAccess(String name, int newAccess) {
         fieldAccessChanges.put(name, newAccess);
@@ -129,7 +133,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 新增方法（方法体由回调填充）。
+     * Add method.
      */
     public JQuickClassModifierTool addMethod(int access, String name, String descriptor, String[] exceptions, JQuickClassWriterTool.MethodBody body) {
         guard.checkModifiable(name, descriptor, access);
@@ -138,26 +142,26 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 新增方法（无异常声明）。
+     * Add method (no exceptions).
      */
     public JQuickClassModifierTool addMethod(int access, String name, String descriptor, JQuickClassWriterTool.MethodBody body) {
         return addMethod(access, name, descriptor, null, body);
     }
 
     /**
-     * 删除方法。构造方法/native 方法会被守卫拒绝。
+     * Remove method.
      */
     public JQuickClassModifierTool removeMethod(String name, String descriptor) {
         if (com.jquick.asm.util.JQuickAsmConstants.INIT.equals(name)
                 || com.jquick.asm.util.JQuickAsmConstants.CLINIT.equals(name)) {
-            throw new SecurityException("禁止删除构造方法/静态初始化块: " + name);
+            throw new SecurityException("Cannot delete constructor or static initializer: " + name);
         }
         methodsToRemove.add(methodKey(name, descriptor));
         return this;
     }
 
     /**
-     * 修改方法访问权限。
+     * Modify method access flag.
      */
     public JQuickClassModifierTool changeMethodAccess(String name, String descriptor, int newAccess) {
         methodAccessChanges.put(methodKey(name, descriptor), newAccess);
@@ -165,7 +169,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 给类新增注解。
+     * Add class annotation.
      */
     public JQuickClassModifierTool addClassAnnotation(String descriptor) {
         classAnnotationsToAdd.add(new JQuickAnnotationInfo(descriptor));
@@ -173,14 +177,14 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 给类新增注解（Class 形式）。
+     * Add class annotation.
      */
     public JQuickClassModifierTool addClassAnnotation(Class<? extends java.lang.annotation.Annotation> annType) {
         return addClassAnnotation(JQuickTypeUtil.toDescriptor(annType));
     }
 
     /**
-     * 删除类注解。
+     * Remove class annotation.
      */
     public JQuickClassModifierTool removeClassAnnotation(String descriptor) {
         classAnnotationsToRemove.add(descriptor);
@@ -188,7 +192,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 给方法新增注解。
+     * Add method annotation.
      */
     public JQuickClassModifierTool addMethodAnnotation(String name, String descriptor, String annDescriptor) {
         methodAnnotationsToAdd
@@ -198,7 +202,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 删除方法注解。
+     * Remove method annotation.
      */
     public JQuickClassModifierTool removeMethodAnnotation(String name, String descriptor, String annDescriptor) {
         methodAnnotationsToRemove.add(methodKey(name, descriptor) + "#" + annDescriptor);
@@ -206,7 +210,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 给字段新增注解。
+     * Add field annotation.
      */
     public JQuickClassModifierTool addFieldAnnotation(String fieldName, String annDescriptor) {
         fieldAnnotationsToAdd.computeIfAbsent(fieldName, k -> new ArrayList<>())
@@ -215,7 +219,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 删除字段注解。
+     * Remove field annotation.
      */
     public JQuickClassModifierTool removeFieldAnnotation(String fieldName, String annDescriptor) {
         fieldAnnotationsToRemove.add(fieldName + "#" + annDescriptor);
@@ -223,7 +227,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 执行所有修改并返回新字节码。
+     * Apply all modifications and return new bytecode.
      */
     public byte[] apply() {
         ClassReader reader = new ClassReader(source);
@@ -234,32 +238,33 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 执行修改并内存加载。
+     * Apply all modifications and define class in memory.
      */
     public Class<?> applyAndDefine(String className) {
         return JQuickBytecodeUtil.defineClass(className, apply());
     }
 
     /**
-     * 执行修改并写出文件。
+     * Apply all modifications and write to file.
      */
     public String applyAndWrite(String className, String outputDir) {
         return JQuickBytecodeUtil.writeToFile(className, apply(), outputDir);
     }
 
     /**
-     * 包装方法访问器：在方法访问开始时注入新增的注解。
+     * Wrapped method visitor: injects additional annotations at the beginning of method visiting.
      *
-     * <p>ASM 允许在 {@code visitCode} 之前任意次调用 {@code visitAnnotation}，
-     * 因此在包装器构造阶段立即注入是合法的；原方法的注解随后由 ClassReader 继续访问，
-     * 顺序不影响运行时语义。
+     * <p>ASM permits multiple {@code visitAnnotation} invocations before {@code visitCode}.
+     * Therefore injecting annotations immediately during wrapper construction is valid.
+     * Annotations from the original method are visited subsequently by ClassReader;
+     * visitation order does not affect runtime semantics.
      */
     private MethodVisitor wrapMethodAnnotationAdder(MethodVisitor mv, String methodKey) {
         List<JQuickAnnotationInfo> toAdd = methodAnnotationsToAdd.get(methodKey);
         if (toAdd == null || toAdd.isEmpty()) {
             return mv;
         }
-        // 立即注入：注解必须在 visitAttribute/visitCode 之前访问
+        // Inject immediately: annotations must be visited before visitAttribute / visitCode
         for (JQuickAnnotationInfo ann : toAdd) {
             AnnotationVisitor av = mv.visitAnnotation(ann.getDescriptor(), true);
             if (av != null) {
@@ -270,14 +275,18 @@ public final class JQuickClassModifierTool {
     }
 
     private static class MethodAddSpec {
+
         final int access;
+
         final String name;
+
         final String descriptor;
+
         final String[] exceptions;
+
         final JQuickClassWriterTool.MethodBody body;
 
-        MethodAddSpec(int access, String name, String descriptor, String[] exceptions,
-                      JQuickClassWriterTool.MethodBody body) {
+        MethodAddSpec(int access, String name, String descriptor, String[] exceptions, JQuickClassWriterTool.MethodBody body) {
             this.access = access;
             this.name = name;
             this.descriptor = descriptor;
@@ -287,7 +296,7 @@ public final class JQuickClassModifierTool {
     }
 
     /**
-     * 修改访问器：在遍历过程中按配置进行增删改。
+     * Modify class visitor: traverse class and apply modifications.
      */
     private class ModifierVisitor extends ClassVisitor {
 
@@ -298,7 +307,7 @@ public final class JQuickClassModifierTool {
         @Override
         public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
             if (classAnnotationsToRemove.contains(descriptor)) {
-                // 删除：不转发，返回 null
+                // Remove annotation: do not forward, return null
                 return null;
             }
             return super.visitAnnotation(descriptor, visible);
@@ -306,14 +315,14 @@ public final class JQuickClassModifierTool {
 
         @Override
         public void visitEnd() {
-            // 新增类注解
+            // Add class annotations
             for (JQuickAnnotationInfo ann : classAnnotationsToAdd) {
                 AnnotationVisitor av = super.visitAnnotation(ann.getDescriptor(), true);
                 if (av != null) {
                     av.visitEnd();
                 }
             }
-            // 新增字段
+            // Add fields annotations
             for (JQuickFieldInfo f : fieldsToAdd) {
                 FieldVisitor fv = super.visitField(f.getAccess(), f.getName(),
                         f.getDescriptor(), f.getSignature(), f.getValue());
@@ -321,7 +330,7 @@ public final class JQuickClassModifierTool {
                     fv.visitEnd();
                 }
             }
-            // 新增方法
+            // Add methods annotations
             for (MethodAddSpec m : methodsToAdd) {
                 MethodVisitor methodVisitor = super.visitMethod(
                         m.access, m.name, m.descriptor, null, m.exceptions);
@@ -334,10 +343,9 @@ public final class JQuickClassModifierTool {
         }
 
         @Override
-        public FieldVisitor visitField(int access, String name, String descriptor,
-                                       String signature, Object value) {
+        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
             if (fieldsToRemove.contains(name)) {
-                return null; // 删除字段
+                return null; // Remove field: do not forward, return null
             }
             int newAccess = access;
             if (fieldAccessChanges.containsKey(name)) {
@@ -345,7 +353,7 @@ public final class JQuickClassModifierTool {
             }
             FieldVisitor fv = super.visitField(newAccess, name, descriptor, signature, value);
             final String fieldName = name;
-            // 包装：过滤删除项 + 注入新增项
+            // Wrap: filter out removal items + inject new annotations
             fv = new FieldVisitor(JQuickAsmConstants.ASM_API, fv) {
                 @Override
                 public AnnotationVisitor visitAnnotation(String annDesc, boolean visible) {
@@ -355,7 +363,7 @@ public final class JQuickClassModifierTool {
                     return super.visitAnnotation(annDesc, visible);
                 }
             };
-            // 新增字段注解
+            // Add field annotations
             List<JQuickAnnotationInfo> fieldAnns = fieldAnnotationsToAdd.get(name);
             if (fieldAnns != null) {
                 for (JQuickAnnotationInfo ann : fieldAnns) {
@@ -369,28 +377,26 @@ public final class JQuickClassModifierTool {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor,
-                                         String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
             String key = methodKey(name, descriptor);
             boolean willRemove = methodsToRemove.contains(key);
             boolean willChangeAccess = methodAccessChanges.containsKey(key);
-
-            // 安全校验：仅在真正修改（删除/改权限）时拦截，构造方法/native 等受保护；
-            // 仅遍历转发不受影响，保证正常方法可被保留。
+            // Security check: interception only for actual modifications (deletion / access‑flag change).
+            // Constructors, native methods and other protected members are guarded;
+            // pure traversal and forwarding are unaffected to preserve normal methods.
             if (willRemove || willChangeAccess) {
                 guard.checkModifiable(name, descriptor, access);
             }
 
             if (willRemove) {
-                return null; // 删除方法
+                return null; // Remove method: do not forward, return null
             }
             int newAccess = access;
             if (willChangeAccess) {
                 newAccess = methodAccessChanges.get(key);
             }
             MethodVisitor mv = super.visitMethod(newAccess, name, descriptor, signature, exceptions);
-
-            // 删除方法注解 + 新增方法注解：统一包装
+            // Wrap: filter out removal items + inject new annotations
             final String removePrefix = key + "#";
             MethodVisitor filtered = new MethodVisitor(JQuickAsmConstants.ASM_API, mv) {
                 @Override

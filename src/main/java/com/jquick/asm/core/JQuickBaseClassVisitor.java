@@ -7,32 +7,31 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 
 /**
- * asm-core 基础 ClassVisitor 封装。
- *
- * <p>承担两类职责：
+ * ASM‑core base ClassVisitor wrapper.
+ * <p>Two‑mode implementation:
  * <ol>
- *   <li>读取模式：遍历类结构并填充 {@link JQuickClassInfo}（由 asm-reader 使用）。</li>
- *   <li>增强模式：转发所有事件给下游 {@code ClassVisitor}，同时为方法访问提供
- *       统一的 {@link JQuickBaseMethodVisitor} 工厂钩子（由 asm-enhance 使用）。</li>
+ * <li><b>Read:</b> Traverse class structure to fill {@link JQuickClassInfo} for asm‑reader.</li>
+ * <li><b>Enhance:</b> Delegate events to downstream {@code ClassVisitor}, expose
+ * {@link JQuickBaseMethodVisitor} factory hook for asm‑enhance.</li>
  * </ol>
  *
- * <h3>使用示例</h3>
+ * <h3>Examples</h3>
  * <pre>{@code
  * JQuickClassInfo info = new JQuickClassInfo();
  * ClassVisitor cv = new JQuickBaseClassVisitor(Opcodes.ASM9, null, info);
  * reader.accept(cv, JQuickAsmConstants.PARSE_FLAGS);
- * // info 已填充完毕
+ * // info is populated
  * }</pre>
  */
 public class JQuickBaseClassVisitor extends ClassVisitor {
 
     /**
-     * 解析结果容器（读取模式使用，增强模式可为 null）
+     * Parsing result container (used in read mode; may be {@code null} for enhance mode).
      */
     protected final JQuickClassInfo classInfo;
 
     /**
-     * 方法访问器工厂：返回 null 表示使用默认 JQuickBaseMethodVisitor
+     * Method Visitor Factory: Returning null indicates using the default JQuickBaseMethodVisitor
      */
     protected MethodVisitorFactory methodVisitorFactory;
 
@@ -46,14 +45,17 @@ public class JQuickBaseClassVisitor extends ClassVisitor {
     }
 
     /**
-     * 设置方法访问器工厂（增强模式使用）。
+     * Sets method visitor factory (enhance‑mode only).
      *
-     * @param factory 工厂，传入 null 表示不定制方法访问器
+     * @param factory factory; pass {@code null} to skip custom method visitor
      */
     public void setMethodVisitorFactory(MethodVisitorFactory factory) {
         this.methodVisitorFactory = factory;
     }
 
+    /**
+     * Visits class header.
+     */
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         if (classInfo != null) {
@@ -68,7 +70,7 @@ public class JQuickBaseClassVisitor extends ClassVisitor {
                 }
             }
         }
-        if (cv != null) {
+        if (cv != null) {//forward to downstream cv,eg: ClassWriter
             cv.visit(version, access, name, signature, superName, interfaces);
         }
     }
@@ -80,24 +82,21 @@ public class JQuickBaseClassVisitor extends ClassVisitor {
             classInfo.addAnnotation(ann);
             return new AnnotationCollector(JQuickAsmConstants.ASM_API, cv != null ? cv.visitAnnotation(descriptor, visible) : null, ann);
         }
-        return cv != null ? cv.visitAnnotation(descriptor, visible) : null;
+        return cv != null ? cv.visitAnnotation(descriptor, visible) : null;//forward to downstream cv
     }
 
     @Override
-    public FieldVisitor visitField(int access, String name, String descriptor,
-                                   String signature, Object value) {
+    public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
         if (classInfo != null) {
             JQuickFieldInfo field = new JQuickFieldInfo(access, name, descriptor, signature, value);
             classInfo.addField(field);
-            return new FieldInfoCollector(JQuickAsmConstants.ASM_API,
-                    cv != null ? cv.visitField(access, name, descriptor, signature, value) : null, field);
+            return new FieldInfoCollector(JQuickAsmConstants.ASM_API, cv != null ? cv.visitField(access, name, descriptor, signature, value) : null, field);
         }
-        return cv != null ? cv.visitField(access, name, descriptor, signature, value) : null;
+        return cv != null ? cv.visitField(access, name, descriptor, signature, value) : null;//forward to downstream cv
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String descriptor,
-                                     String signature, String[] exceptions) {
+    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
         if (classInfo != null) {
             JQuickMethodInfo method = new JQuickMethodInfo(access, name, descriptor, signature);
             if (exceptions != null) {
@@ -108,12 +107,10 @@ public class JQuickBaseClassVisitor extends ClassVisitor {
             classInfo.addMethod(method);
         }
         MethodVisitor downstream = cv != null ? cv.visitMethod(access, name, descriptor, signature, exceptions) : null;
-        if (methodVisitorFactory != null) { // 增强模式：通过工厂定制方法访问器
-            return methodVisitorFactory.create(
-                    JQuickAsmConstants.ASM_API, downstream, access, name, descriptor,
-                    signature, exceptions, classInfo);
+        if (methodVisitorFactory != null) { // Enhanced mode: Accessing through factory customized methods
+            return methodVisitorFactory.create(JQuickAsmConstants.ASM_API, downstream, access, name, descriptor, signature, exceptions, classInfo);
         }
-        if (classInfo != null) {// 读取模式：用 JQuickBaseMethodVisitor 收集参数名/注解（不转发指令）
+        if (classInfo != null) {// Read mode: Collect parameter names/comments using JQuickBaseMethodVisitor (without forwarding instructions)
             JQuickMethodInfo last = classInfo.getMethods().get(classInfo.getMethods().size() - 1);
             return new MethodMetaCollector(JQuickAsmConstants.ASM_API, downstream, last);
         }
@@ -182,26 +179,26 @@ public class JQuickBaseClassVisitor extends ClassVisitor {
     }
 
     /**
-     * 方法访问器工厂接口：增强模块通过它注入字节码改写逻辑。
+     * The factory interface of the access controller: enhances the module by injecting bytecode to rewrite logic.
      */
     public interface MethodVisitorFactory {
         /**
-         * 创建方法访问器。
+         * Creates method visitor.
          *
-         * @param api        ASM API 版本
-         * @param downstream 下游 MethodVisitor（通常来自 ClassWriter）
-         * @param access     方法访问修饰符
-         * @param name       方法名
-         * @param descriptor 方法描述符
-         * @param signature  方法泛型签名
-         * @param exceptions 方法抛出异常
-         * @param classInfo  所属类信息
+         * @param api        ASM API version
+         * @param downstream downstream MethodVisitor (usually from ClassWriter)
+         * @param access     method access modifiers
+         * @param name       method name
+         * @param descriptor method descriptor
+         * @param signature  method generic signature
+         * @param exceptions method thrown exceptions
+         * @param classInfo  owner class metadata
          */
         MethodVisitor create(int api, MethodVisitor downstream, int access, String name, String descriptor, String signature, String[] exceptions, JQuickClassInfo classInfo);
     }
 
     /**
-     * 注解收集器：把注解属性写入 {@link JQuickAnnotationInfo}，同时转发到下游。
+     * Annotation collector: writes annotation properties into {@link JQuickAnnotationInfo}, forwards events to downstream visitor.
      */
     static class AnnotationCollector extends AnnotationVisitor {
 
@@ -233,7 +230,7 @@ public class JQuickBaseClassVisitor extends ClassVisitor {
     }
 
     /**
-     * 字段信息收集器：收集字段注解。
+     * Field info collector: gathers field annotations.
      */
     static class FieldInfoCollector extends FieldVisitor {
 
@@ -253,7 +250,7 @@ public class JQuickBaseClassVisitor extends ClassVisitor {
     }
 
     /**
-     * 方法元信息收集器：在读取模式下收集方法注解与参数名，不处理指令。
+     * Method metadata collector: gathers method annotations and parameter names in read‑mode, ignores bytecode instructions.
      */
     static class MethodMetaCollector extends MethodVisitor {
 

@@ -7,12 +7,12 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * asm-core 方法信息容器。
+ * Method information container for asm‑core.
  *
- * <p>记录方法的访问修饰符、名称、描述符、签名、抛出异常、参数名、注解列表。
- * 不直接持有方法字节码指令；指令级编辑由 {@code asm-enhance} 模块负责。
+ * <p>Stores method access flags, name, descriptor, signature, thrown exceptions, parameter names and annotation list.
+ * Does not hold method bytecode instructions directly; instruction‑level editing is handled by the {@code asm‑enhance} module.
  *
- * <h3>使用示例</h3>
+ * <h3>Usage Example</h3>
  * <pre>{@code
  * JQuickMethodInfo m = new JQuickMethodInfo(
  *     Opcodes.ACC_PUBLIC, "doSomething", "(ILjava/lang/String;)V");
@@ -24,40 +24,40 @@ import java.util.List;
 public class JQuickMethodInfo {
 
     /**
-     * 方法名
+     * method Name
      */
     private final String name;
     /**
-     * 方法描述符，如 {@code "(ILjava/lang/String;)V"}
+     * method， Descriptor, eg  {@code "(ILjava/lang/String;)V"}
      */
     private final String descriptor;
     /**
-     * 方法泛型签名，无泛型则为 null
+     * Method generic signature, null if there is no generic
      */
     private final String signature;
     /**
-     * 方法抛出异常的内部名列表，如 {@code ["java/io/IOException"]}
+     * Method throws a list of internal names for exceptions, eg{@code ["java/io/IOException"]}
      */
     private final List<String> exceptions = new ArrayList<>();
     /**
-     * 方法参数名列表（若调试信息被保留）
+     * Method parameter name list (if debugging information is retained)
      */
     private final List<String> parameterNames = new ArrayList<>();
     /**
-     * 方法注解列表
+     * Method Annotation List
      */
     private final List<JQuickAnnotationInfo> annotations = new ArrayList<>();
     /**
-     * 访问修饰符
+     * Access Modifiers
      */
     private int access;
 
     public JQuickMethodInfo(int access, String name, String descriptor, String signature) {
         if (name == null || name.isEmpty()) {
-            throw new IllegalArgumentException("方法名不能为空");
+            throw new IllegalArgumentException("Method name cannot be empty");
         }
         if (descriptor == null || descriptor.isEmpty()) {
-            throw new IllegalArgumentException("方法描述符不能为空");
+            throw new IllegalArgumentException("Method descriptor cannot be empty");
         }
         this.access = access;
         this.name = name;
@@ -127,36 +127,36 @@ public class JQuickMethodInfo {
     }
 
     /**
-     * 是否为构造方法。
+     * Checks whether this is a constructor method.
      */
     public boolean isConstructor() {
         return JQuickAccessUtil.isConstructor(name);
     }
 
     /**
-     * 是否为静态初始化块。
+     * Returns {@code true} if this is a static initializer block.
      */
     public boolean isStaticInitializer() {
         return JQuickAccessUtil.isStaticInitializer(name);
     }
 
     /**
-     * 是否为 native 方法。
+     * Returns {@code true} if this is a native method.
      */
     public boolean isNative() {
         return JQuickAccessUtil.isNative(access);
     }
 
     /**
-     * 是否为 abstract 方法（无方法体，不可插桩）。
+     * Returns {@code true} if this is an abstract method (no method body, instrumentation is not applicable).
      */
     public boolean isAbstract() {
         return JQuickAccessUtil.isAbstract(access);
     }
 
     /**
-     * 是否可安全修改：排除构造方法、native、abstract、静态初始化块。
-     * 构造方法破坏会影响对象初始化语义，按安全规范禁止插桩。
+     * Returns {@code true} if this method can be safely modified: excludes constructors, native methods, abstract methods, and static initializer blocks.
+     * Corruption of constructors may break object‑initialization semantics; instrumentation is prohibited per safety specifications.
      */
     public boolean isModifiable() {
         return !isConstructor() && !isNative() && !isAbstract() && !isStaticInitializer();

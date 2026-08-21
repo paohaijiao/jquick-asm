@@ -1,20 +1,20 @@
 package com.jquick.asm.enhance;
 
-import org.objectweb.asm.Opcodes;
 
 /**
- * asm-enhance 方法增强通知接口。
+ * asm‑enhance method enhancement advice interface.
  *
- * <p>定义方法「头部插入」与「返回前插入」两类钩子，由 {@link JQuickMethodEnhancer} 在
- * 字节码层面对应位置注入。实现方只需关心要插入的指令，无需处理 Visitor 细节。
+ * <p>Defines two hook points: insertion at method entry and insertion before method return.
+ * Hooks are injected at corresponding positions on bytecode level by {@link JQuickMethodEnhancer}.
+ * Implementors only need to focus on instructions to emit without dealing with low‑level Visitor details.
  *
- * <h3>钩子触发时机</h3>
+ * <h3>Hook Execution Timing</h3>
  * <ul>
- *   <li>{@link #onEnter}：方法体第一行（构造方法在 super 调用之后）。</li>
- *   <li>{@link #onExit}：每条返回指令之前（RETURN/IRETURN/.../ATHROW）。</li>
+ *   <li>{@link #onEnter}: First line of method body (after super‑constructor call for constructors).</li>
+ *   <li>{@link #onExit}: Before every return instruction (RETURN/IRETURN/.../ATHROW).</li>
  * </ul>
  *
- * <h3>使用示例</h3>
+ * <h3>Usage Example</h3>
  * <pre>{@code
  * JQuickMethodAdvice advice = JQuickMethodAdvice.builder()
  *     .onEnter(ctx -> {
@@ -30,34 +30,37 @@ import org.objectweb.asm.Opcodes;
  *     .build();
  * }</pre>
  */
+
 public interface JQuickMethodAdvice {
 
     /**
-     * 创建构建器。
+     * Creates a new builder instance.
+     *
+     * @return builder instance
      */
     static Builder builder() {
         return new Builder();
     }
 
     /**
-     * 方法头部插入逻辑。
+     * Method entry hook.
      *
-     * @param ctx 方法上下文
+     * @param ctx method context
      */
     default void onEnter(JQuickMethodContext ctx) {
     }
 
     /**
-     * 方法返回前插入逻辑（每条返回指令触发一次）。
+     * Method exit hook.
      *
-     * @param ctx    方法上下文
-     * @param opcode 返回指令操作码，如 {@link Opcodes#RETURN}、{@link Opcodes#ARETURN}、{@link Opcodes#ATHROW}
+     * @param ctx    method context
+     * @param opcode return instruction opcode
      */
     default void onExit(JQuickMethodContext ctx, int opcode) {
     }
 
     /**
-     * 方法头部钩子。
+     * Method entry hook.
      */
     @FunctionalInterface
     interface EnterHook {
@@ -65,7 +68,7 @@ public interface JQuickMethodAdvice {
     }
 
     /**
-     * 方法返回前钩子。
+     * Method exit hook.
      */
     @FunctionalInterface
     interface ExitHook {
@@ -73,7 +76,7 @@ public interface JQuickMethodAdvice {
     }
 
     /**
-     * 构建器：链式组装 onEnter/onExit。
+     * Builder pattern for configuring advice hooks.
      */
     final class Builder {
         private EnterHook enterHook = ctx -> {

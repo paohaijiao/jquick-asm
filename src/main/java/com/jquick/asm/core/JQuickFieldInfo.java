@@ -5,11 +5,11 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * asm-core 字段信息容器。
+ * ASM‑core field metadata container.
  *
- * <p>记录字段的访问修饰符、名称、描述符、签名、初始值与注解列表。
+ * <p>Stores field access modifiers, name, descriptor, signature, initial value and annotations.
  *
- * <h3>使用示例</h3>
+ * <h3>Examples</h3>
  * <pre>{@code
  * JQuickFieldInfo field = new JQuickFieldInfo(Opcodes.ACC_PRIVATE, "name", "Ljava/lang/String;", null);
  * field.addAnnotation(new JQuickAnnotationInfo("Lcom/demo/NotNull;"));
@@ -18,7 +18,11 @@ import java.util.List;
 public class JQuickFieldInfo {
 
     /**
-     * 访问修饰符
+     * Access modifiers
+     * ACC_PUBLIC 0x0001
+     * ACC_PRIVATE 0x0002
+     * ACC_PROTECTED 0x0004
+     *
      */
     private final int access;
 
@@ -28,31 +32,31 @@ public class JQuickFieldInfo {
     private final String name;
 
     /**
-     * 字段类型描述符，如 {@code "Ljava/lang/String;"}、{@code "I"}
+     * Field type descriptor，eg {@code "Ljava/lang/String;"}、{@code "I"}
      */
     private final String descriptor;
 
     /**
-     * 字段泛型签名，无泛型则为 null
+     * Field generic signature, null if there is no generic
      */
     private final String signature;
 
     /**
-     * 字段常量初始值（仅 static final 常量字段有效），否则 null
+     * Initial value of field constant (only valid for static final constant fields), otherwise null
      */
     private final Object value;
 
     /**
-     * 字段注解列表
+     * Field annotation list
      */
     private final List<JQuickAnnotationInfo> annotations = new ArrayList<>();
 
     public JQuickFieldInfo(int access, String name, String descriptor, String signature, Object value) {
         if (name == null || name.isEmpty()) {
-            throw new IllegalArgumentException("字段名不能为空");
+            throw new IllegalArgumentException("Field name cannot be empty");
         }
         if (descriptor == null || descriptor.isEmpty()) {
-            throw new IllegalArgumentException("字段描述符不能为空");
+            throw new IllegalArgumentException("Field descriptor cannot be empty");
         }
         this.access = access;
         this.name = name;
@@ -96,7 +100,7 @@ public class JQuickFieldInfo {
     }
 
     /**
-     * 获取指定描述符的注解，不存在返回 null。
+     * Retrieve the annotation of the specified descriptor, there is no null returned.
      */
     public JQuickAnnotationInfo getAnnotation(String descriptor) {
         for (JQuickAnnotationInfo ann : annotations) {
@@ -108,7 +112,7 @@ public class JQuickFieldInfo {
     }
 
     /**
-     * 返回不可变注解列表视图。
+     * Return the immutable annotation list view
      */
     public List<JQuickAnnotationInfo> annotationsView() {
         return Collections.unmodifiableList(annotations);
