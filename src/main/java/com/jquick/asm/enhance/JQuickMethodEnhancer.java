@@ -128,6 +128,7 @@ public final class JQuickMethodEnhancer {
         ClassReader reader = new ClassReader(source);
         ClassWriter cw = new ClassWriter(reader, JQuickAsmConstants.WRITER_FLAGS);
         JQuickBaseClassVisitor cv = new JQuickBaseClassVisitor(JQuickAsmConstants.ASM_API, cw, null);
+        //declair method visitor factory
         cv.setMethodVisitorFactory((api, downstream, access, name, descriptor, signature, exceptions, classInfo) -> {
             String owner = classInfo == null ? null : classInfo.getInternalName();
             MethodMeta meta = new MethodMeta(access, name, descriptor);
@@ -156,7 +157,7 @@ public final class JQuickMethodEnhancer {
                 }
             };
         });
-
+        //invoke the  method visitor factory
         reader.accept(cv, JQuickAsmConstants.PARSE_FLAGS);
         return cw.toByteArray();
     }
