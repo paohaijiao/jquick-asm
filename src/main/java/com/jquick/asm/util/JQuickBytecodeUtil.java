@@ -1,5 +1,7 @@
 package com.jquick.asm.util;
 
+import com.jquick.asm.core.JQuickClassInfo;
+import com.jquick.asm.reader.JQuickSpringbootReaderTool;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
@@ -54,8 +56,11 @@ public final class JQuickBytecodeUtil {
         if (bytes == null || bytes.length == 0) {
             throw new IllegalArgumentException("bytes cannot be null or empty array");
         }
-        // To avoid the exception of 'class with the same name already loaded', a new loader instance is defined each time
-        ByteArrayClassLoader loader = new ByteArrayClassLoader();
+        ClassLoader parent = Thread.currentThread().getContextClassLoader();
+        if (parent == null) {
+            parent = JQuickBytecodeUtil.class.getClassLoader();
+        }
+        ByteArrayClassLoader loader = new ByteArrayClassLoader(parent);
         Class<?> clazz = loader.define(className, bytes);
         currentLoader = loader;
         return clazz;
@@ -124,8 +129,34 @@ public final class JQuickBytecodeUtil {
 
         private final AtomicLong counter = new AtomicLong(0);
 
+        ByteArrayClassLoader(ClassLoader parent) {
+            super(parent);
+        }
+
+        ByteArrayClassLoader() {
+            super(Thread.currentThread().getContextClassLoader());
+        }
+
         Class<?> define(String name, byte[] data) {
             return defineClass(name, data, 0, data.length);
+        }
+
+    }
+    public static Class<?> loadClassFromNestedJar(String className) {
+        try {
+            // 首先尝试从 Spring Boot 工具读取
+            JQuickClassInfo info = JQuickSpringbootReaderTool.read(className);
+            if (info != null) {
+                byte[] bytes = JQuickSpringbootReaderTool.readBytes(className);
+                if (bytes != null) {
+                    return defineClass(className, bytes);
+                }
+            }
+
+            // 使用标准类加载器
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Cannot load class from nested JAR: " + className, e);
         }
     }
 }

@@ -52,10 +52,15 @@ public final class JQuickClassReaderTool {
         try (InputStream in = clazz.getClassLoader() == null
                 ? ClassLoader.getSystemResourceAsStream(resource)
                 : clazz.getClassLoader().getResourceAsStream(resource)) {
-            if (in == null) {
+            if (in != null) {
+                return read(in);
+            }
+            JQuickClassInfo classInfo=JQuickSpringbootReaderTool.read(clazz);
+            if (classInfo != null) {
+                return classInfo;
+            }else {
                 throw new IllegalStateException("Unable to find class resource : " + resource);
             }
-            return read(in);
         } catch (IOException e) {
             throw new RuntimeException("Failed to read class resources: " + clazz.getName(), e);
         }
